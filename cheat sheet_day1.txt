@@ -1,0 +1,99 @@
+############################################
+# Installation cheat sheet
+############################################
+
+# Set GUID on all machines
+ansible all -m shell -a 'export GUID=`hostname | cut -d"." -f2`; echo "export GUID=$GUID" >> $HOME/.bashrc'
+
+# List all ansible hosts
+ansible all --list-hosts
+
+# Default host inventory
+/etc/ansible/hosts 
+
+# Verify
+ansible all -m ping
+ansible all -m shell -a 'docker -version'
+ansible all -m shell -a 'docker --version'
+ansible all -m shell -a 'yum repolist'
+ansible nfs -m shell -a"exportfs"
+
+
+# Install ansible and oc tools
+yum install atomic-openshift-utils atomic-openshift-clients
+
+
+# Create custom ansible inventory
+mkdir rh_adv_deploy_lab
+cd rh_adv_deploy_lab/
+git init
+cp /etc/ansible/hosts ocp_inventory
+vi ocp_inventory 
+
+# Get certificate from LDAP server
+wget http://ipa.shared.example.opentlc.com/ipa/config/ca.crt -O /root/ipa-ca.crt
+cp /root/ipa-ca.crt .
+
+# Check installation prerequisites
+ansible-playbook -i /root/rh_adv_deploy_lab/ocp_inventory -f 20 /usr/share/ansible/openshift-ansible/playbooks/prerequisites.yml
+
+# Install cluster
+ansible-playbook -i /root/rh_adv_deploy_lab/ocp_inventory -f 20 /usr/share/ansible/openshift-ansible/playbooks/deploy_cluster.yml 
+
+# Copy kube config to bastion to enable oc commands in cluster
+ansible masters[0] -b -m fetch -a "src=/root/.kube/config dest=/root/.kube/config flat=yes"
+oc whoami
+
+# Verify that nodes are running
+oc get nodes --show-labels
+
+
+# Verify that pods are running
+oc get pod --all-namespaces -o wide
+
+
+# Get users
+oc get users
+
+# Copy files needed for LDAP sync
+ansible masters -m copy -a 'src=/root/rh_adv_deploy_lab/groupsync.yaml dest=/etc/origin/master/groupsync.yaml'
+ansible masters -m copy -a 'src=/root/rh_adv_deploy_lab/whitelist.yaml dest=/etc/origin/master/whitelist.yaml'
+
+# Get users via master 1
+ansible master1.99e4.internal -m shell -a 'oc get users'
+
+# Sync LDAP groups (dry run)
+ansible master1.99e4.internal -m shell -a 'oc adm groups sync --sync-config=/etc/origin/master/groupsync.yaml --whitelist=/etc/origin/master/whitelist.yaml'
+
+# Sync LDAP groups (for real)
+ansible master1.99e4.internal -m shell -a 'oc adm groups sync --sync-config=/etc/origin/master/groupsync.yaml --whitelist=/etc/origin/master/whitelist.yaml --confirm'
+ansible master1.99e4.internal -m shell -a 'oc get groups'
+
+
+# Copy scripts to NFS server to create dirs 
+ansible nfs -m copy -a 'src=/root/rh_adv_deploy_lab/create_nfs_dirs.sh dest=/tmp/create_nfs_dirs.sh'
+ansible nfs -m shell -a 'chmod +x /tmp/create_nfs_dirs.sh'
+ansible nfs -m shell -a '/tmp/create_nfs_dirs.sh'
+
+
+# Create PV definitions
+chmod +x create_5g_pvs.sh  
+./create_5g_pvs.sh 
+chmod +x create_10g_pvs.sh 
+./create_10g_pvs.sh 
+cat /root/pvs/* | oc create -f -
+oc get pv
+
+
+# Pull PV recycler image to all nodes
+ansible nodes -m shell -a "docker pull registry.access.redhat.com/openshift3/ose-recycler:latest"
+ansible nodes -m shell -a "docker tag registry.access.redhat.com/openshift3/ose-recycler:latest registry.access.redhat.com/openshift3/ose-recycler:v3.10.14"
+
+
+# Smoke test
+oc new-project smoke-test
+oc new-app nodejs-mongo-persistent
+watch oc get pod
+oc get route
+oc delete project smoke-test
+
