@@ -1,0 +1,121 @@
+    1  exit
+    2  ansible-playbook -i /root/rh_adv_deploy_lab/ocp_inventory -f 20 /usr/share/ansible/openshift-ansible/playbooks/deploy_cluster.yml
+    3  exit
+    4  ansible all -m shell -a 'export GUID=`hostname | cut -d"." -f2`; echo "export GUID=$GUID" >> $HOME/.bashrc'
+    5  ansible all -m shell -a 'echo GUID=$GUID'
+    6  hostname | cut -d"." -f2
+    7  ansible all -m shell -a 'hostname | cut -d"." -f2'
+    8  ansible all -m shell -a 'echo GUID=$GUID'
+    9  ansible all -m shell -a 'echo $GUID'
+   10  ansible all -m shell -a 'export GUID=`hostname | cut -d"." -f2`; echo "export GUID=$GUID" >> $HOME/.bashrc'
+   11  ansible all -m shell -a 'echo $GUID'
+   12  ansible all -m shell -a 'echo GUID=$GUID'
+   13  ssh master1.99e4.internal
+   14  ansible all -m shell -a 'sudo -i;echo GUID=$GUID'
+   15  ansible all -m shell -a 'echo GUID=$GUID' --become_user=root
+   16  ansible --help
+   17  ansible all -m shell -a 'echo GUID=$GUID' --become-user=root
+   18  ssh master1.99e4.internal
+   19  ansible --list-hosts
+   20  ansible all --list-hosts
+   21  cat /etc/ansible/hosts 
+   22  ansible all -m ping
+   23  ansible all -m shell -a 'docker -version'
+   24  ansible all -m shell -a 'docker --version'
+   25  ansible all -m shell -a 'yum repolist'
+   26  ansible nfs -m shell -a"exportfs"
+   27  yum install atomic-openshift-utils atomic-openshift-clients
+   28  mkdir rh_adv_deploy_lab
+   29  cd rh_adv_deploy_lab/
+   30  git init
+   31  cp /etc/ansible/hosts ocp_inventory
+   32  vi ocp_inventory 
+   33  wget http://ipa.shared.example.opentlc.com/ipa/config/ca.crt -O /root/ipa-ca.crt
+   34  cp /root/ipa-ca.crt .
+   35  ansible nfs -m shell -a"ls /root"
+   36  ansible masters -m shell -a"ls /root"
+   37  ansible masters -m shell -a"ls /etc/origin/master"
+   38  ansible-playbook -i /root/rh_adv_deploy_lab/ocp_inventory -f 20 /usr/share/ansible/openshift-ansible/playbooks/prerequisites.yml
+   39  ansible-playbook -i /root/rh_adv_deploy_lab/ocp_inventory -f 20 /usr/share/ansible/openshift-ansible/playbooks/byo/config.yml
+   40  ansible-playbook -i /root/rh_adv_deploy_lab/ocp_inventory -f 20 /usr/share/ansible/openshift-ansible/playbooks/deploy_cluster.yml 
+   41  ansible masters[0] -b -m fetch -a "src=/root/.kube/config dest=/root/.kube/config flat=yes"
+   42  oc whoami
+   43  oc get nodes --show-labels
+   44  oc get pod --all-namespaces -o wide
+   45  ansible masters -m shell -a 'ls /etc/origin'
+   46  ansible masters -m shell -a 'ls /etc/origin/master'
+   47  ansible masters -m shell -a 'cat /etc/origin/master/htpasswd'
+   48  ansible masters -m shell -a 'ls /root'
+   49  git status
+   50  git add .
+   51  git commit -m "initial inventory file"
+   52  vi ocp_inventory 
+   53  yum install screen
+   54  screen
+   55  tmux
+   56  git status
+   57  git add ocp_inventory
+   58  git commit -m "update to include ldap"
+   59  git remote add origin https://github.com/bentaljaard/rh_adv_deploy_lab.git
+   60  git push -u origin master
+   61  tmux --list
+   62  tmux lsit
+   63  tmux list
+   64  tmux list-sessions
+   65  tmux attach 0
+   66  tmux attach -t 0
+   67  git pull
+   68  ls
+   69  oc get users
+   70  ansible -m copy
+   71  ansible -m copy --help
+   72  ansible masters -m copy -a 'src=/root/rh_adv_deploy_lab/groupsync.yaml dest=/etc/origin/master/groupsync.yaml'
+   73  ansible masters -m copy -a 'src=/root/rh_adv_deploy_lab/whitelist.yaml dest=/etc/origin/master/whitelist.yaml'
+   74  ansible master1 -m shell -a 'oc get users'
+   75  ansible master -m shell -a 'oc get users'
+   76  ansible master1 -m shell -a 'oc get users'
+   77  ansible master1.$GUID.internal -m shell -a 'oc get users'
+   78  ansible nodes
+   79  ansible hosts
+   80  ansible masters
+   81  ansible masters --list-hosts
+   82  ansible master1.99e4.internal -m shell -a 'oc get users'
+   83  ansible master1.99e4.internal -m shell -a 'oc adm groups sync --sync-config=/etc/origin/master/groupsync.yaml --whitelist=/etc/origin/master/whitelist.yaml'
+   84  ansible master1.99e4.internal -m shell -a 'oc adm groups sync --sync-config=/etc/origin/master/groupsync.yaml --whitelist=/etc/origin/master/whitelist.yaml --confirm'
+   85  ansible master1.99e4.internal -m shell -a 'oc get groups'
+   86  ansible nfs --list-hosts
+   87  ansible nfs -m shell -a 'echo $GUID'
+   88  vi create_nfs_dirs.sh
+   89  chmod +x create_nfs_dirs.sh 
+   90  ansible nfs -m copy -a 'src=/root/rh_adv_deploy_lab/create_nfs_dirs.sh dest=/tmp/create_nfs_dirs.sh'
+   91  ansible nfs -m shell -a '/tmp/create_nfs_dirs.sh'
+   92  ansible nfs -m shell -a 'chmod +x /tmp/create_nfs_dirs.sh'
+   93  ansible nfs -m shell -a '/tmp/create_nfs_dirs.sh'
+   94  vi create_nfs_dirs.sh 
+   95  ansible nfs -m copy -a 'src=/root/rh_adv_deploy_lab/create_nfs_dirs.sh dest=/tmp/create_nfs_dirs.sh'
+   96  ansible nfs -m shell -a 'chmod +x /tmp/create_nfs_dirs.sh'
+   97  ansible nfs -m shell -a '/tmp/create_nfs_dirs.sh'
+   98  vi create_5g_pvs.sh
+   99  chmod +x create_5g_pvs.sh 
+  100  ./create_5g_pvs.sh 
+  101  vi create_10g_pvs.sh
+  102  chmod +x create_10g_pvs.sh 
+  103  ./create_10g_pvs.sh 
+  104  cat /root/pvs/* | oc create -f -
+  105  oc get pv
+  106  ansible nodes -m shell -a "docker pull registry.access.redhat.com/openshift3/ose-recycler:latest"
+  107  ansible nodes -m shell -a "docker tag registry.access.redhat.com/openshift3/ose-recycler:latest registry.access.redhat.com/openshift3/ose-recycler:v3.10.14"
+  108  oc whoami
+  109  oc new-project smoke-test
+  110  oc new-app nodejs-mongo-persistent
+  111  watch oc get pod
+  112  oc get route
+  113  oc delete project smoke-test
+  114  git status
+  115  git add .
+  116  git commit -m "add create scritps for nfs volumes"
+  117  git push -u origin master
+  118  exit
+  119  history
+  120  cd rh_adv_deploy_lab/
+  121  history > history_bastion_day1.txt
