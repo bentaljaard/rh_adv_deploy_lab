@@ -170,6 +170,12 @@ openshift_prometheus_alertbuffer_storage_volume_size=10Gi
 openshift_prometheus_alertbuffer_storage_labels={'storage': 'prometheus-alertbuffer'}
 openshift_prometheus_alertbuffer_storage_type='pvc'
 
+##########################################################################
+### Openshfit project configuration
+##########################################################################
+osm_project_request_message='Please create project using the portal http://portal.99e4.internal/provision or Contact Karla at karla@example.com'
+
+
 ###########################################################################
 ### OpenShift Hosts
 ###########################################################################
