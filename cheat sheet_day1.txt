@@ -32,7 +32,6 @@ vi ocp_inventory
 
 # Get certificate from LDAP server
 wget http://ipa.shared.example.opentlc.com/ipa/config/ca.crt -O /root/ipa-ca.crt
-cp /root/ipa-ca.crt .
 
 # Check installation prerequisites
 ansible-playbook -i /root/rh_adv_deploy_lab/ocp_inventory -f 20 /usr/share/ansible/openshift-ansible/playbooks/prerequisites.yml
@@ -97,3 +96,10 @@ watch oc get pod
 oc get route
 oc delete project smoke-test
 
+#### Docs ####
+
+# Uninstall 
+# https://docs.openshift.com/container-platform/3.10/install/running_install.html#uninstalling-advanced
+
+# Install
+# https://docs.openshift.com/container-platform/3.10/install/running_install.html

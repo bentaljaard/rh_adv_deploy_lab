@@ -1,0 +1,63 @@
+
+# Create projects to demonstrate roles
+
+export APPNAME=portalapp
+export APPTEXT="Portal App"
+oc new-project ${APPNAME}-dev --display-name="${APPTEXT} Development"
+oc new-project ${APPNAME}-test --display-name="${APPTEXT} Testing"
+oc new-project ${APPNAME}-prod --display-name="${APPTEXT} Production"
+
+
+export APPNAME=paymentapp
+export APPTEXT="Payment App"
+oc new-project ${APPNAME}-dev --display-name="${APPTEXT} Development"
+oc new-project ${APPNAME}-test --display-name="${APPTEXT} Testing"
+oc new-project ${APPNAME}-prod --display-name="${APPTEXT} Production"
+
+
+# Assign roles to groups
+oc adm policy add-role-to-group admin portalapp -n portalapp-dev
+oc adm policy add-role-to-group admin portalapp -n portalapp-test
+oc adm policy add-role-to-group admin paymentapp -n paymentapp-dev
+oc adm policy add-role-to-group admin paymentapp -n paymentapp-test
+oc describe rolebinding.rbac -n paymentapp-dev
+
+
+oc adm policy add-role-to-group admin ocp-production -n portalapp-prod
+oc adm policy add-role-to-group admin ocp-production -n paymentapp-prod
+oc adm policy add-cluster-role-to-group cluster-admin ocp-platform
+
+oc adm policy add-role-to-group system:image-puller system:serviceaccounts:paymentapp-prod -n paymentapp-dev
+oc adm policy add-role-to-group system:image-puller system:serviceaccounts:paymentapp-test -n paymentapp-dev
+oc adm policy add-role-to-group registry-viewer ocp-production -n paymentapp-dev
+oc adm policy add-role-to-group registry-viewer ocp-production -n paymentapp-test
+
+
+
+# Allow containers to start with root user
+oc adm policy add-scc-to-group anyuid system:serviceaccounts:paymentapp-prod
+oc login -u prod1 -p 'r3dh4t1!'
+oc project paymentapp-prod
+oc new-app --strategy=docker https://github.com/thoraxe/centos-root-docker-example
+oc logs -f build/centos-root-docker-example-1 -n paymentapp-prod
+oc get pod
+oc rsh centos-root-docker-example-1-8wm8r
+
+
+# Add project create message
+vi ocp_inventory 
+ansible masters -m lineinfile -a "path=/etc/origin/master/master-config.yaml regexp='projectRequestMessage' line='  projectRequestMessage: \'Please create project using the portal http://portal.99e4.internal/provision or contact Karla at karla@example.com\''"
+
+# Restart master API
+ansible masters -m shell -a "systemctl restart atomic-openshift-master-api.service"
+
+# Remove ability for all users to create projects
+oc login -u system:admin
+oc project default
+oc adm policy remove-cluster-role-from-group self-provisioner system:authenticated
+oc adm policy remove-cluster-role-from-group self-provisioner system:authenticated:oauth
+oc describe clusterrolebinding.rbac -n default self-provisioner
+
+
+# Allow ocp-production group to create projects
+oc adm policy add-cluster-role-to-group self-provisioner ocp-production

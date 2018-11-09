@@ -1,0 +1,65 @@
+
+# Setup Horizontal Pod Autoscaler
+oc new-project test-hpa
+oc new-app openshift/hello-openshift:v3.9 -n test-hpa
+oc expose svc hello-openshift
+oc status
+
+# Creat limit ranges
+cat limit_range.json | oc create -n test-hpa -f -
+
+# Setup autoscaler
+oc autoscale dc/hello-openshift --min 1 --max 5 --cpu-percent=80
+
+oc get hpa/hello-openshift -n test-hpa
+oc describe hpa/hello-openshift -n test-hpa
+oc rollout latest hello-openshift -n test-hpa
+oc describe hpa/hello-openshift -n test-hpa
+
+oc delete project test-hpa
+
+# Setup cluster quotas for projects created by Andrew
+export GUID=`hostname | awk -F. '{print $2}'`
+echo "export GUID=$GUID" >> .bashrc
+export OCP_USERNAME=andrew
+oc create clusterquota clusterquota-${OCP_USERNAME}  --project-annotation-selector=openshift.io/requester=$OCP_USERNAME  --hard pods=25  --hard requests.memory=6Gi  --hard requests.cpu=5  --hard limits.cpu=25   --hard limits.memory=40Gi  --hard configmaps=25  --hard persistentvolumeclaims=25   --hard services=25
+oc get clusterresourcequota
+oc describe clusterresourcequota clusterquota-andrew
+
+
+# Deploy 3scale
+wget https://raw.githubusercontent.com/3scale/3scale-amp-openshift-templates/2.1.0-GA/amp/amp.yml
+wget https://raw.githubusercontent.com/3scale/3scale-amp-openshift-templates/2.1.0-GA/apicast-gateway/apicast.yml
+oc login -u andrew -p r3dh4t1!
+oc new-project 3scale
+oc create -f amp.yml
+oc create -f apicast.yml # if applicable
+oc new-app --template=system --param WILDCARD_DOMAIN=apps.$GUID.example.opentlc.com
+oc get pods -n 3scale
+oc get events | grep clusterquota
+oc delete project 3scale
+
+oc new-project 3scale
+oc create -n 3scale -f limits.yaml 
+oc get users
+oc login -u andrew -p r3dh4t1!
+oc create -f amp.yml
+oc create -f apicast.yml # if applicable
+oc new-app --template=system --param WILDCARD_DOMAIN=apps.$GUID.example.opentlc.com
+oc get events | grep clusterquota
+oc describe AppliedClusterResourceQuota
+oc get events -w
+oc adm top pod
+
+
+wget https://raw.githubusercontent.com/newgoliath/ocp_advanced_deployment_assets/master/Managing_Compute_Resources/2_amp_template_solution.yaml
+wget https://raw.githubusercontent.com/newgoliath/ocp_advanced_deployment_assets/master/Managing_Compute_Resources/3_amp_template_solution.yaml
+vimdiff 3_amp_template_solution.yaml  2_amp_template_solution.yaml
+oc create -f 3_amp_template_solution.yaml 
+oc replace -f 3_amp_template_solution.yaml 
+oc new-app --template=system --param WILDCARD_DOMAIN=apps.$GUID.example.opentlc.com
+
+oc login -u system:admin
+oc delete project 3scale
+oc get clusterresourcequota
+oc delete clusterresourcequota clusterquota-andrew

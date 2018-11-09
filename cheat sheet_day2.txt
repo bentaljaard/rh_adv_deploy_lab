@@ -1,0 +1,75 @@
+# Change ovs plugin to multitenant
+ansible masters -m shell -a "sed -i -e 's/openshift-ovs-subnet/openshift-ovs-multitenant/g' /etc/origin/master/master-config.yaml"
+ 
+
+# Restart master services
+ansible masters -m shell -a "systemctl restart atomic-openshift-master-api.service"
+ansible masters -m shell -a "systemctl restart atomic-openshift-master-controllers.service"
+
+
+# Update node config to multitenant OVS plugin
+ansible nodes -m shell -a "sed -i -e 's/ovs-.*/ovs-multitenant/g' /etc/origin/node/node-config.yaml"
+
+# Restart node services and networking
+ansible nodes -m shell -a "systemctl restart atomic-openshift-node"
+ansible nodes -m shell -a "systemctl restart openvswitch"
+
+# Verify net namespaces
+oc get netnamespaces
+
+
+# Migrate script to ensure that all netid's are different
+oc get netnamespaces
+curl -o ./migrate-network-policy.sh https://raw.githubusercontent.com/openshift/origin/master/contrib/migration/migrate-network-policy.sh
+chmod a+x migrate-network-policy.sh
+./migrate-network-policy.sh
+oc get netnamespaces
+
+
+# Configure SDN for ovs-networkpolicy
+ansible masters -m shell -a "sed -i -e 's/openshift-ovs-multitenant/openshift-ovs-networkpolicy/g' /etc/origin/master/master-config.yaml"
+ansible nodes -m shell -a "sed -i -e 's/ovs-multitenant/ovs-networkpolicy/' /etc/origin/node/node-config.yaml"
+ansible masters -m shell -a "systemctl restart atomic-openshift-master-api atomic-openshift-master-controllers"
+ansible nodes -m shell -a "systemctl restart atomic-openshift-node openvswitch"
+
+
+# Network policy example
+
+git clone https://github.com/newgoliath/microservices-on-openshift
+cd microservices-on-openshift/
+cd installscripts/
+oc new-project msclient
+oc new-project msservices
+oc new-project msinfra
+
+# Update file to set GUID
+echo $GUID
+vi 1.setVariable.sh 
+
+source 1.setVariable.sh 
+source 2.deployEmailSvc-PythonMySQL.sh
+source 3.deployTwitter-Tomcat.sh
+source 4.deployUserRegBackend-NodejsMongo.sh 
+source 5.deployFrontend-PHP.sh 
+
+oc get pods -n msclient
+oc get pods -n msservices
+oc get pods -n msinfra
+
+oc get route -n msclient
+oc get svc -n msinfra --show-labels
+oc get pods -n msinfra --show-labels | grep Running
+
+
+oc create -f allow-3306.yaml -n msinfra\
+
+curl http://userreg-msclient.apps.$GUID.example.opentlc.com/hack.php
+
+oc create -f allow-8080-frontend.yaml -n msclient
+oc create -f default-deny.yaml -n msservices
+oc create -f allow-8080-userregsvc.yaml -n msservices
+oc create -f allow-8080-twitter.yaml -n msservices
+oc create -f allow-8080-emailsvc.yaml -n msinfra
+
+oc get netnamespaces
+
